@@ -1,0 +1,6 @@
+npm create vite@latest . 
+npm i 
+npm i @types/three three three-stdlib @react-three/fiber @react-three/drei
+npm i leva
+npm i @react-three/rapier
+npm i r3f-perf

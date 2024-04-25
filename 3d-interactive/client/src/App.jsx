@@ -1,0 +1,126 @@
+import { useEffect, useRef, useState } from 'react'
+import './App.css'
+import * as THREE from "three"
+import {Canvas,useThree} from '@react-three/fiber'
+import {Environment, KeyboardControls, Loader, OrbitControls, Sky, SoftShadows} from "@react-three/drei"
+import {Physics, RigidBody} from '@react-three/rapier'
+import  MyCharacter  from './myCharacter';
+import {Perf} from "r3f-perf";
+import {Model as City} from './City';
+import { Colleague } from './Colleague';
+import { DEG2RAD } from"three/src/math/MathUtils"
+
+function App() {
+  const [count, setCount] = useState(0)
+  const [loaded, setLoaded] =useState(false);
+  return (
+    <>
+    <KeyboardControls
+      map={[
+        {name:"forward",keys:["ArrowUp","KeyW"]},
+        {name:"backward",keys:["ArrowDown","KeyS"]},
+        {name:"leftward",keys:["ArrowLeft","KeyA"]},
+        {name:"rightward",keys:["ArrowRight","KeyD"]},
+        {name:"capoeira",keys:["KeyC"]},
+        {name:"run",keys:["KeyR"]},
+        {name:"walk",keys:["Shift"]},
+        {name:"jump",keys:["Space"]}
+      ]}>
+      <Canvas shadows>
+        <Experience loaded={loaded}/>
+      </Canvas>
+      <Loader dataInterpolation={(v) =>{
+          if(v>= 100) setLoaded(true);
+          return parseInt(v) + "%";
+          }} />
+    </KeyboardControls>
+    </>
+  );
+}
+
+export default App
+
+
+function FollowShadowLight({ refLight, refCharacterRigid }){
+ useFrame(() => {
+  if (refCharacterRigid.current) {
+    const { x: cx, y: cy, z: cz } = refCharacterRigid.current.translation()
+    const cPos = newTHREE.Vector3(cx, cy, cz)
+    const lightRevDir = new THREE.Vector3(0, 1, 1).normalize()
+    const newPos =lightRevDir.multiplyScalar(2).add(cPos)
+    if(refLight.current) {
+      refLight.current.target.position.copy(cPos)
+      refLight.current.position.copy(newPos)
+    }
+  }
+ })
+
+}
+
+function Experience(){  
+  const {gl,scene} = useThree(({gl,scene})=>({gl,scene}));
+  const refLight = useRef();
+  const refOrbitControls = useRef(); 
+  const refCharacterRigid = useRef()
+  // const shadowCameraSize =20;
+
+  useEffect(()=>{gl.toneMappingExposure =0.7},[gl,scene]);
+  
+  const refShadowCameraHelper = useRef();
+  useEffect(() => {
+    refShadowCameraHelper.current =new THREE.CameraHelper(refLight.current.shadow.camera);
+    scene.add(refShadowCameraHelper.current)
+    scene.add(refLight.current.target)
+    return () => {
+      scene.remove(refShadowCameraHelper.current)
+      scene.remove(refLight.current.target)
+    }
+  }, [refLight.current]);
+
+
+  const Colleagues =[
+    { name: "영희", animationName: "Idle", position: [2.5, 1, 0], rotationY: DEG2RAD * 0},
+    { name: "철수", animationName: "Run", position: [-2.5, 1, 0], rotationY: DEG2RAD * 45 },
+    { name: "민재", animationName: "Walk", position: [0, 1, 2.5], rotationY: DEG2RAD * 228 }
+  ]
+
+
+  return(
+  <>
+    <Perf position="bottom-left"/>
+    <OrbitControls ref={refOrbitControls} makeDefault enablePen={false}/>
+    <directionalLight ref={refLight}  castShadow position={[0,1,2]} intensity={1}
+        // shadow-normalBias={0.1}
+        // shadow-mapSize={[1024 * 4, 1024 * 4]}
+        // shadow-camera-near={1}
+        // shadow-camera-far={25}
+        // shadow-camera-top={shadowCameraSize}
+        // shadow-camera-bottom={-shadowCameraSize}
+        // shadow-camera-right={shadowCameraSize}
+        // shadow-camera-left={-shadowCameraSize}
+    />
+
+    <Environment preset='city' />
+    <Sky/>
+    <SoftShadows size={2} focus ={0} samples={8}/>
+    <Physics debug >
+
+      <RigidBody type='fixed' colliders="trimesh">
+        <City/>
+        {/* <mesh receiveShadow>
+        <boxGeometry args={[1000,0.1,1000]}/>
+        <meshStandardMaterial color="#5d6d72" />
+        </mesh> */}
+      </RigidBody>
+      <MyCharacter name="Myname" position={[0,1.5,0]}ref={refCharacterRigid} refOrbitControls = {refOrbitControls}/>
+      {/* <Colleague name="extra" position={[2.5,1.5,0]}/>
+      <Colleague name="extra" position={[3,1.5,0]}/>
+      <Colleague name="extra" position={[-5,1.5,0]}/>
+     */}
+      { Colleagues.map((item, idx) =><Colleague key={idx}{...item}/>) }
+
+    </Physics>
+
+  </>
+  );
+}

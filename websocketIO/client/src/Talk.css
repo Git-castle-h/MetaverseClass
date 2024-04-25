@@ -1,0 +1,22 @@
+.characters-list {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  justify-content: center;
+}
+
+.character-name {
+  padding: 0.2em0 0.6em;
+  border-radius: 0.5em;
+  border: 1pxsolidblack;
+}
+
+.message {
+  margin: 0.5em;
+  display: flex;
+  gap: 0.5em;
+}
+
+.messageinput {
+  flex: 1;
+}/*# sourceMappingURL=Talk.css.map */
